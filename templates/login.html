@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 — GMT.AI 钢贸通</title>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Instrument Sans',sans-serif;background:#06080d;color:#eaeff8;min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+        body::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 20%,rgba(77,142,255,0.04) 0%,transparent 50%),radial-gradient(ellipse at 70% 80%,rgba(212,168,83,0.03) 0%,transparent 50%);pointer-events:none}
+        .login-container{width:100%;max-width:420px;padding:20px;position:relative;z-index:1}
+        .login-brand{text-align:center;margin-bottom:40px}
+        .login-brand h1{font-size:36px;font-weight:700;letter-spacing:-1px}
+        .login-brand h1 .gmt{color:#eaeff8}
+        .login-brand h1 .ai{color:#4d8eff}
+        .login-brand p{color:#4e6080;font-size:13px;margin-top:8px;letter-spacing:1px}
+        .login-card{background:#131b2e;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:36px;box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(255,255,255,0.05)}
+        .login-card::before{content:'';position:absolute;top:0;left:20%;right:20%;height:1px;background:linear-gradient(90deg,transparent,rgba(77,142,255,0.2),transparent)}
+        .login-card h2{font-size:18px;font-weight:600;margin-bottom:24px;text-align:center}
+        .form-group{margin-bottom:18px}
+        .form-label{display:block;font-size:11px;font-weight:600;color:#4e6080;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+        .form-input{width:100%;padding:12px 16px;background:#0b0f18;border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:#eaeff8;font-size:15px;font-family:'Instrument Sans',sans-serif;transition:all 0.2s}
+        .form-input:focus{outline:none;border-color:#4d8eff;box-shadow:0 0 0 3px rgba(77,142,255,0.08),0 0 20px rgba(77,142,255,0.06)}
+        .form-input::placeholder{color:#3a4a60}
+        .btn-login{width:100%;padding:14px;background:linear-gradient(135deg,#3d7aed,#5a95ff);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:'Instrument Sans',sans-serif;transition:all 0.2s;box-shadow:0 4px 20px rgba(77,142,255,0.3);margin-top:8px}
+        .btn-login:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(77,142,255,0.4)}
+        .error-msg{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);color:#f87171;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;text-align:center}
+        .login-footer{text-align:center;margin-top:20px;font-size:13px;color:#4e6080}
+        .login-footer a{color:#4d8eff;text-decoration:none}
+        .login-footer a:hover{text-decoration:underline}
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-brand">
+            <h1><span class="gmt">GMT</span><span class="ai">.AI</span></h1>
+            <p>钢贸通 · 全自动外贸 AI 系统</p>
+        </div>
+        <div class="login-card" style="position:relative">
+            <h2>登录</h2>
+            {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
+            <form method="POST" action="/login">
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input class="form-input" name="username" type="text" placeholder="输入用户名" autofocus required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input class="form-input" name="password" type="password" placeholder="输入密码" required>
+                </div>
+                <button class="btn-login" type="submit">登 录</button>
+            </form>
+            <div class="login-footer">
+                还没有账号？<a href="/register">注册新账号</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

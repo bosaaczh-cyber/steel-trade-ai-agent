@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% set active_page = "mtc" %}
+{% block title %}MTC证书{% endblock %}
+{% block page_title %}MTC 材质证书{% endblock %}
+{% block breadcrumb %}GMT.AI / MTC{% endblock %}
+
+{% block content %}
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="switchMtcTab('form')">填写生成</div>
+    <div class="tab" onclick="switchMtcTab('json')">JSON 导入</div>
+    <div class="tab" onclick="switchMtcTab('demo')">演示数据</div>
+</div>
+
+<!-- TAB: FORM -->
+<div class="tab-panel" id="tab-form">
+    <!-- Header -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🏭 头部信息</span>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">产品 (Product)</label>
+                <input class="form-input" id="hProduct" value="SMLS STEEL PIPE">
+            </div>
+            <div class="form-group">
+                <label class="form-label">标准 (Spec)</label>
+                <input class="form-input" id="hSpec" value="ASTM A53">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">证书编号 (License No.)</label>
+                <input class="form-input" id="hLicense" placeholder="填写证书编号">
+            </div>
+            <div class="form-group">
+                <label class="form-label">合同编号 (Contract No.)</label>
+                <input class="form-input" id="hContract" placeholder="填写合同编号">
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+                <label class="form-label">尺寸</label>
+                <input class="form-input" id="hSize" value="AS BELOW">
+            </div>
+            <div class="form-group">
+                <label class="form-label">钢级</label>
+                <input class="form-input" id="hGrade" value="GRB">
+            </div>
+            <div class="form-group">
+                <label class="form-label">管端类型</label>
+                <input class="form-input" id="hEnd" value="PE/BE">
+            </div>
+            <div class="form-group">
+                <label class="form-label">加工方式</label>
+                <input class="form-input" id="hProcessing" value="Hot rolled">
+            </div>
+            <div class="form-group">
+                <label class="form-label">交货状态</label>
+                <input class="form-input" id="hDelivery" value="---">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">审核人</label>
+                <input class="form-input" id="hAuditor" placeholder="审核人姓名">
+            </div>
+            <div class="form-group">
+                <label class="form-label">制证人</label>
+                <input class="form-input" id="hCertifier" placeholder="制证人姓名">
+            </div>
+        </div>
+    </div>
+
+    <!-- Items -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📐 管材数据（力学性能 + 化学成分）</span>
+            <button class="btn btn-sm" onclick="addItemRow()">+ 添加行</button>
+        </div>
+        <div class="table-wrap" style="overflow-x: auto;">
+            <table id="itemsTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>尺寸 (Size)</th>
+                        <th>炉号 (Heat)</th>
+                        <th>批号 (Batch)</th>
+                        <th>YS</th>
+                        <th>TS</th>
+                        <th>EL%</th>
+                        <th>C</th>
+                        <th>Mn</th>
+                        <th>Si</th>
+                        <th>S</th>
+                        <th>P</th>
+                        <th>支数</th>
+                        <th>吨数</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="itemsBody">
+                    <!-- Dynamic rows -->
+                </tbody>
+            </table>
+        </div>
+        <button class="btn btn-sm" onclick="addItemRow()" style="margin-top: 12px;">+ 添加行</button>
+    </div>
+
+    <!-- Tests & Summary -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">🔬 理化试验</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label class="form-label">压扁 (Flatten)</label>
+                    <select class="form-select test-field" data-key="flatten">
+                        <option value="Accepted">Accepted</option>
+                        <option value="---">---</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">冷弯 (Cold Bend)</label>
+                    <select class="form-select test-field" data-key="cold_bend">
+                        <option value="---">---</option>
+                        <option value="Accepted">Accepted</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">扩口 (Flaring)</label>
+                    <select class="form-select test-field" data-key="flaring">
+                        <option value="Accepted">Accepted</option>
+                        <option value="---">---</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">通径 (Drift)</label>
+                    <select class="form-select test-field" data-key="drift">
+                        <option value="---">---</option>
+                        <option value="Accepted">Accepted</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">超声波 (UT)</label>
+                    <select class="form-select test-field" data-key="ut">
+                        <option value="Accepted">Accepted</option>
+                        <option value="---">---</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">涡流 (ET)</label>
+                    <select class="form-select test-field" data-key="et">
+                        <option value="Accepted">Accepted</option>
+                        <option value="---">---</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">水压 (HP)</label>
+                    <select class="form-select test-field" data-key="hp">
+                        <option value="Accepted">Accepted</option>
+                        <option value="---">---</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">表面 (Surface)</label>
+                    <select class="form-select test-field" data-key="surface">
+                        <option value="Accepted">Accepted</option>
+                        <option value="---">---</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📦 汇总</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">总捆数 (Total Bundles)</label>
+                <input class="form-input" id="sumBundles" type="number" value="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">总支数 (Total Pcs)</label>
+                <input class="form-input" id="sumPcs" type="number" value="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">总重量 (Total WT, 吨)</label>
+                <input class="form-input" id="sumWt" type="number" step="0.001" value="0">
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="generateMTC()" style="width: 100%; padding: 14px; font-size: 15px;">
+                    📋 生成 MTC 证书
+                </button>
+            </div>
+            <div id="mtcResult" style="margin-top: 12px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: JSON -->
+<div class="tab-panel" id="tab-json" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📄 JSON 数据导入</span>
+            <button class="btn btn-sm" onclick="loadTemplate()">加载空白模板</button>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
+            粘贴完整的订单 JSON 数据，格式参考空白模板。
+        </p>
+        <div class="form-group">
+            <textarea class="form-textarea" id="jsonInput" rows="20"
+                      placeholder='{"header":{...}, "items":[...], "tests":{...}, "summary":{...}}'></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="generateFromJSON()">📋 从 JSON 生成 MTC</button>
+        <div id="jsonResult" style="margin-top: 12px;"></div>
+    </div>
+</div>
+
+<!-- TAB: DEMO -->
+<div class="tab-panel" id="tab-demo" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🎭 演示模式</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
+            用内置的示例数据（ASTM A53 无缝钢管，7个规格）生成一份演示 MTC。
+        </p>
+        <button class="btn btn-primary" onclick="generateDemo()">📋 一键生成演示 MTC</button>
+        <div id="demoResult" style="margin-top: 12px;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let itemCount = 0;
+
+function switchMtcTab(name) {
+    document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.textContent.includes(
+            name === 'form' ? '填写' : name === 'json' ? 'JSON' : '演示'
+        ));
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+    document.getElementById('tab-' + name).style.display = '';
+}
+
+function addItemRow(data = {}) {
+    itemCount++;
+    const tbody = document.getElementById('itemsBody');
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td class="mono">${itemCount}</td>
+        <td><input class="form-input" style="width:140px;padding:4px 8px;font-size:12px;" data-field="size" value="${data.size||''}"></td>
+        <td><input class="form-input" style="width:90px;padding:4px 8px;font-size:12px;" data-field="heat_no" value="${data.heat_no||''}"></td>
+        <td><input class="form-input" style="width:70px;padding:4px 8px;font-size:12px;" data-field="batch_no" value="${data.batch_no||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="ys" type="number" value="${data.ys||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="ts" type="number" value="${data.ts||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="el" type="number" step="0.1" value="${data.el||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="C" type="number" step="0.01" value="${data.C||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="Mn" type="number" step="0.01" value="${data.Mn||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="Si" type="number" step="0.01" value="${data.Si||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="S" type="number" step="0.001" value="${data.S||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="P" type="number" step="0.001" value="${data.P||''}"></td>
+        <td><input class="form-input" style="width:55px;padding:4px 8px;font-size:12px;" data-field="pcs" type="number" value="${data.pcs||''}"></td>
+        <td><input class="form-input" style="width:70px;padding:4px 8px;font-size:12px;" data-field="wt_t" type="number" step="0.001" value="${data.wt_t||''}"></td>
+        <td><button class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">✗</button></td>
+    `;
+    tbody.appendChild(row);
+}
+
+// Initialize with 1 empty row
+addItemRow();
+
+function collectFormData() {
+    const items = [];
+    document.querySelectorAll('#itemsBody tr').forEach(row => {
+        const item = {};
+        row.querySelectorAll('input[data-field]').forEach(input => {
+            const val = input.value;
+            const field = input.dataset.field;
+            if (input.type === 'number' && val) {
+                item[field] = parseFloat(val);
+            } else {
+                item[field] = val;
+            }
+        });
+        if (item.size) items.push(item);
+    });
+
+    const tests = {};
+    document.querySelectorAll('.test-field').forEach(sel => {
+        tests[sel.dataset.key] = sel.value;
+    });
+
+    return {
+        header: {
+            product:     document.getElementById('hProduct').value,
+            spec:        document.getElementById('hSpec').value,
+            license_no:  document.getElementById('hLicense').value,
+            contract_no: document.getElementById('hContract').value,
+            size:        document.getElementById('hSize').value,
+            grade:       document.getElementById('hGrade').value,
+            type_of_end: document.getElementById('hEnd').value,
+            processing:  document.getElementById('hProcessing').value,
+            delivery:    document.getElementById('hDelivery').value,
+            auditor:     document.getElementById('hAuditor').value,
+            certifier:   document.getElementById('hCertifier').value,
+        },
+        items,
+        tests,
+        summary: {
+            total_bundles: parseInt(document.getElementById('sumBundles').value) || 0,
+            total_pcs:     parseInt(document.getElementById('sumPcs').value) || 0,
+            total_wt:      parseFloat(document.getElementById('sumWt').value) || 0,
+        }
+    };
+}
+
+async function generateMTC() {
+    const data = collectFormData();
+    if (!data.items.length) { showToast('请至少填写一行管材数据', 'error'); return; }
+    showToast('正在生成 MTC...', 'info');
+
+    const res = await apiCall('/api/mtc/generate', 'POST', data);
+    if (res.success) {
+        document.getElementById('mtcResult').innerHTML =
+            `<a class="btn btn-success" href="/download/${res.file}" style="width:100%; justify-content: center;">
+                📥 下载 MTC: ${res.file}
+            </a>`;
+        showToast('MTC 生成成功！', 'success');
+    } else {
+        showToast('生成失败：' + (res.error || '未知错误'), 'error');
+    }
+}
+
+async function generateFromJSON() {
+    const raw = document.getElementById('jsonInput').value.trim();
+    if (!raw) { showToast('请粘贴 JSON 数据', 'error'); return; }
+    try {
+        const data = JSON.parse(raw);
+        showToast('正在生成 MTC...', 'info');
+        const res = await apiCall('/api/mtc/generate', 'POST', data);
+        if (res.success) {
+            document.getElementById('jsonResult').innerHTML =
+                `<a class="btn btn-success" href="/download/${res.file}">📥 下载 ${res.file}</a>`;
+            showToast('MTC 生成成功！', 'success');
+        } else {
+            showToast('失败：' + res.error, 'error');
+        }
+    } catch (e) {
+        showToast('JSON 格式错误：' + e.message, 'error');
+    }
+}
+
+async function loadTemplate() {
+    const res = await apiCall('/api/mtc/template');
+    document.getElementById('jsonInput').value = JSON.stringify(res, null, 2);
+    showToast('已加载演示数据模板', 'info');
+}
+
+async function generateDemo() {
+    showToast('正在用演示数据生成 MTC...', 'info');
+    const tmpl = await apiCall('/api/mtc/template');
+    const res = await apiCall('/api/mtc/generate', 'POST', tmpl);
+    if (res.success) {
+        document.getElementById('demoResult').innerHTML =
+            `<a class="btn btn-success" href="/download/${res.file}">📥 下载演示 MTC: ${res.file}</a>`;
+        showToast('演示 MTC 生成成功！', 'success');
+    } else {
+        showToast('失败：' + res.error, 'error');
+    }
+}
+</script>
+{% endblock %}

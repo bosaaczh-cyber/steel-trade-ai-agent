@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% set active_page = "settings" %}
+{% block title %}个人中心{% endblock %}
+{% block page_title %}个人中心{% endblock %}
+{% block breadcrumb %}GMT.AI / Profile{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+    <div>
+        <div class="card fade-in" style="margin-bottom: 20px;">
+            <div class="card-header">
+                <span class="card-title">账号信息</span>
+                <a href="/logout" class="btn btn-sm btn-danger">退出登录</a>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #3d7aed, #5a95ff); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff;">
+                    {{ current_user[0]|upper if current_user else 'U' }}
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 16px;">{{ current_user }}</div>
+                    <div class="mono" style="color: var(--text-muted); font-size: 12px;">
+                        {% if company.name_en %}{{ company.name_en }}{% elif company.name and company.name != '我的钢管公司' and company.name != '我的公司' %}{{ company.name }}{% else %}<span style="color: var(--warning);">请先填写公司信息</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card fade-in">
+            <div class="card-header">
+                <span class="card-title">绑定公司信息</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 20px; line-height: 1.7;">
+                填写你的公司资料，AI 生成开发信时会<span style="color: var(--accent);">自动使用这些信息</span>。右边可以实时预览效果。
+            </p>
+
+            <div style="font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">基本信息</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">公司中文名 *</label>
+                    <input class="form-input pv" id="sName" value="{{ company.name }}" placeholder="沧州恒通钢管有限公司">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">公司英文名 *</label>
+                    <input class="form-input pv" id="sNameEn" value="{{ company.name_en }}" placeholder="Hengtong Steel Pipe Co., Ltd.">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">所在地</label>
+                <input class="form-input pv" id="sLocation" value="{{ company.location }}" placeholder="河北沧州 / Cangzhou, Hebei, China">
+            </div>
+
+            <div style="font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin: 16px 0 12px;">产品实力</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">年产能</label>
+                    <input class="form-input pv" id="sCapacity" value="{{ company.capacity }}" placeholder="年产能12万吨">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">认证资质</label>
+                    <input class="form-input pv" id="sCerts" value="{{ company.certs }}" placeholder="API 5L / ISO 9001 / CE">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">交货能力</label>
+                <input class="form-input pv" id="sDelivery" value="{{ company.delivery }}" placeholder="中东30天交货，拉美45天交货">
+            </div>
+            <div class="form-group">
+                <label class="form-label">核心优势（AI 写信重点引用）</label>
+                <textarea class="form-textarea pv" id="sAdvantages" rows="3" placeholder="20年出口经验，产品覆盖60多个国家，迪拜有海外仓">{{ company.advantages }}</textarea>
+            </div>
+
+            <div style="font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin: 16px 0 12px;">联系方式</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">业务邮箱</label>
+                    <input class="form-input pv" id="sEmail" value="{{ company.email }}" placeholder="sales@company.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">WhatsApp</label>
+                    <input class="form-input pv" id="sWhatsapp" value="{{ company.whatsapp }}" placeholder="+86-138-0000-0000">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">公司网站</label>
+                <input class="form-input pv" id="sWebsite" value="{{ company.website }}" placeholder="https://www.company.com">
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <button class="btn btn-primary" onclick="saveSettings()" style="padding: 12px 36px; font-size: 14px;">保存公司信息</button>
+                <span id="saveStatus" style="font-size: 13px; display: flex; align-items: center;"></span>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card fade-in" style="position: sticky; top: 80px;">
+            <div class="card-header">
+                <span class="card-title">开发信预览</span>
+                <span style="font-size: 11px; color: var(--text-muted);">实时更新</span>
+            </div>
+            <div id="emailPreview" style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; font-family: var(--font-mono); font-size: 12px; line-height: 1.8; color: var(--text-secondary);"></div>
+            <div style="margin-top: 16px; padding: 14px; background: var(--accent-glow); border: 1px solid rgba(77,142,255,0.15); border-radius: var(--radius);">
+                <div style="font-size: 12px; font-weight: 600; color: var(--accent-bright); margin-bottom: 6px;">填写提示</div>
+                <ul style="font-size: 12px; color: var(--text-secondary); line-height: 1.8; padding-left: 16px;">
+                    <li>英文名必填 — 开发信签名和正文都用英文名</li>
+                    <li>认证资质很重要 — 海外客户最看重这个</li>
+                    <li>核心优势写具体数字 — "20年经验"比"经验丰富"好</li>
+                    <li>WhatsApp 必填 — 海外客户首选联系方式</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePreview() {
+    const n = document.getElementById('sNameEn').value || 'Your Company';
+    const l = document.getElementById('sLocation').value || 'China';
+    const c = document.getElementById('sCapacity').value || 'large production capacity';
+    const cr = document.getElementById('sCerts').value || 'internationally certified';
+    const d = document.getElementById('sDelivery').value || 'competitive delivery';
+    const e = document.getElementById('sEmail').value || 'sales@company.com';
+    const w = document.getElementById('sWhatsapp').value || '+86-xxx';
+    const a = document.getElementById('sAdvantages').value;
+
+    document.getElementById('emailPreview').innerHTML = `
+<div style="color: var(--accent-bright); margin-bottom: 10px;">Subject: Steel Pipe Supply Partnership — ${n}</div>
+<div style="color: var(--text-primary);">Dear [Client Name],</div>
+<br>
+<div>I am writing from <b style="color:var(--text-primary)">${n}</b>, based in ${l}.</div>
+<br>
+<div>We specialize in steel pipe manufacturing with <span style="color:var(--success)">${c}</span>, certified by <span style="color:var(--success)">${cr}</span>. We offer <span style="color:var(--warning)">${d}</span> to your region.</div>
+${a ? '<br><div>' + a + '</div>' : ''}
+<br>
+<div>Would you be open to discussing your requirements?</div>
+<br>
+<div style="color:var(--text-primary)">Best regards,</div>
+<div style="color:var(--text-primary);font-weight:500">${n}</div>
+<div style="color:var(--text-muted)">${e} | WhatsApp: ${w}</div>`;
+}
+
+document.querySelectorAll('.pv').forEach(el => el.addEventListener('input', updatePreview));
+updatePreview();
+
+async function saveSettings() {
+    const data = {
+        name: document.getElementById('sName').value,
+        name_en: document.getElementById('sNameEn').value,
+        location: document.getElementById('sLocation').value,
+        capacity: document.getElementById('sCapacity').value,
+        certs: document.getElementById('sCerts').value,
+        delivery: document.getElementById('sDelivery').value,
+        email: document.getElementById('sEmail').value,
+        whatsapp: document.getElementById('sWhatsapp').value,
+        website: document.getElementById('sWebsite').value,
+        advantages: document.getElementById('sAdvantages').value,
+    };
+    if (!data.name_en) { showToast('请至少填写公司英文名', 'error'); return; }
+    const res = await apiCall('/api/settings', 'POST', data);
+    if (res.success) {
+        showToast('公司信息已保存！AI 写信将使用这些信息', 'success');
+        document.getElementById('saveStatus').innerHTML = '<span style="color:var(--success)">已保存 ✓</span>';
+    } else {
+        showToast('保存失败：' + (res.error || ''), 'error');
+    }
+}
+</script>
+{% endblock %}

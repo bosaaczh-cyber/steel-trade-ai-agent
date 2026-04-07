@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% set active_page = "dashboard" %}
+{% block title %}总览看板{% endblock %}
+{% block page_title %}总览看板{% endblock %}
+{% block breadcrumb %}GMT.AI / Dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- HERO PIPELINE -->
+<div class="card fade-in" style="margin-bottom: 24px; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(77,142,255,0.03) 100%);">
+    <div style="text-align: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 2px;">全自动外贸流水线</span>
+    </div>
+    <div class="pipeline">
+        <div class="pipeline-step done">
+            <div class="pipeline-num">1</div>
+            <span class="pipeline-label">AI 找客户</span>
+        </div>
+        <div class="pipeline-step done">
+            <div class="pipeline-num">2</div>
+            <span class="pipeline-label">挖邮箱</span>
+        </div>
+        <div class="pipeline-step active">
+            <div class="pipeline-num">3</div>
+            <span class="pipeline-label">AI 写信</span>
+        </div>
+        <div class="pipeline-step">
+            <div class="pipeline-num">4</div>
+            <span class="pipeline-label">批量发送</span>
+        </div>
+        <div class="pipeline-step">
+            <div class="pipeline-num">5</div>
+            <span class="pipeline-label">自动跟进</span>
+        </div>
+    </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stats-grid">
+    <div class="stat-card fade-in">
+        <div class="stat-label">总发送量</div>
+        <div class="stat-value" style="color: var(--accent)">{{ total_sent }}</div>
+        <div class="stat-sub">封邮件</div>
+    </div>
+    <div class="stat-card fade-in">
+        <div class="stat-label">发送成功</div>
+        <div class="stat-value" style="color: var(--success)">{{ total_success }}</div>
+        <div class="stat-sub">{{ success_rate }}% 成功率</div>
+    </div>
+    <div class="stat-card fade-in">
+        <div class="stat-label">发送失败</div>
+        <div class="stat-value" style="color: var(--danger)">{{ total_failed }}</div>
+        <div class="stat-sub">需要关注</div>
+    </div>
+    <div class="stat-card fade-in">
+        <div class="stat-label">客户库</div>
+        <div class="stat-value" style="color: var(--warning)">{{ total_leads }}</div>
+        <div class="stat-sub">家公司</div>
+    </div>
+    <div class="stat-card fade-in">
+        <div class="stat-label">日额度</div>
+        <div class="stat-value" style="color: var(--gold)">8K</div>
+        <div class="stat-sub">封/日</div>
+    </div>
+</div>
+
+<!-- CHART + ACTIONS -->
+<div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;">
+    <div class="card fade-in">
+        <div class="card-header">
+            <span class="card-title">发送趋势 · 近7天</span>
+        </div>
+        <div style="position: relative; height: 260px;">
+            <canvas id="sendChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card fade-in">
+        <div class="card-header">
+            <span class="card-title">快捷操作</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="/leads" class="btn btn-primary" style="justify-content: center; padding: 15px;">
+                🔍 搜索新客户
+            </a>
+            <a href="/send" class="btn btn-success" style="justify-content: center; padding: 15px;">
+                ✉️ 批量发送开发信
+            </a>
+            <a href="/mtc" class="btn btn-gold" style="justify-content: center; padding: 15px;">
+                📋 生成 MTC 证书
+            </a>
+            <button class="btn" style="justify-content: center; padding: 15px;" onclick="sendTestEmail()">
+                🧪 发送测试邮件
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- RECENT LOG -->
+<div class="card fade-in" style="margin-top: 20px;">
+    <div class="card-header">
+        <span class="card-title">最近发送记录</span>
+        <span class="mono" style="color: var(--text-muted)">最近15条</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>时间</th>
+                    <th>公司</th>
+                    <th>联系人</th>
+                    <th>邮箱</th>
+                    <th>主题</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in recent_log %}
+                <tr>
+                    <td class="mono">{{ entry.date }}</td>
+                    <td class="mono">{{ entry.time }}</td>
+                    <td style="color: var(--text-primary); font-weight: 500;">{{ entry.company or '—' }}</td>
+                    <td>{{ entry.contact or '—' }}</td>
+                    <td class="mono" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">{{ entry.email }}</td>
+                    <td style="max-width: 220px; overflow: hidden; text-overflow: ellipsis;">{{ entry.subject[:40] }}</td>
+                    <td>
+                        {% if entry.status == 'success' %}
+                            <span class="badge badge-success">成功</span>
+                        {% else %}
+                            <span class="badge badge-danger">失败</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not recent_log %}
+                <tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">📭</div><p>还没有发送记录</p></div></td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ctx = document.getElementById('sendChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ chart_dates | safe }},
+        datasets: [
+            { label: '成功', data: {{ chart_success | safe }},
+              backgroundColor: 'rgba(52,211,153,0.6)', borderColor: '#34d399', borderWidth: 1, borderRadius: 4 },
+            { label: '失败', data: {{ chart_failed | safe }},
+              backgroundColor: 'rgba(248,113,113,0.6)', borderColor: '#f87171', borderWidth: 1, borderRadius: 4 }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#4e6080', font: { family: "'DM Mono', monospace", size: 11 } } } },
+        scales: {
+            x: { ticks: { color: '#4e6080', font: { family: "'DM Mono'", size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+            y: { beginAtZero: true, ticks: { color: '#4e6080', stepSize: 1, font: { family: "'DM Mono'", size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } }
+        }
+    }
+});
+
+async function sendTestEmail() {
+    const email = prompt("输入收件邮箱（测试用）：");
+    if (!email) return;
+    showToast("正在发送测试邮件...", "info");
+    const res = await apiCall('/api/send-test', 'POST', { to: email });
+    showToast(res.success ? "测试邮件发送成功！" : "发送失败：" + (res.error || ""), res.success ? "success" : "error");
+}
+</script>
+{% endblock %}

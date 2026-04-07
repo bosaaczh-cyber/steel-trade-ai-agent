@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% set active_page = "leads" %}
+{% block title %}找客户{% endblock %}
+{% block page_title %}找客户{% endblock %}
+{% block breadcrumb %}GMT.AI / Leads{% endblock %}
+
+{% block content %}
+<!-- MODE TABS -->
+<div class="tabs" style="margin-bottom: 0;">
+    <div class="tab active" onclick="switchMode('precise')">精开（定制化）</div>
+    <div class="tab" onclick="switchMode('bulk')">群开（批量）</div>
+</div>
+
+<!-- ═══ PRECISE MODE ═══ -->
+<div id="mode-precise">
+<!-- PIPELINE -->
+<div class="card fade-in" style="padding: 16px 24px; margin-top: 20px;">
+    <div class="pipeline" style="padding: 8px 0; margin: 0;">
+        <div class="pipeline-step active" onclick="location.href='/leads'">
+            <div class="pipeline-num">1</div><span class="pipeline-label">AI 找客户</span>
+        </div>
+        <div class="pipeline-step" onclick="location.href='/leads'">
+            <div class="pipeline-num">2</div><span class="pipeline-label">挖邮箱</span>
+        </div>
+        <div class="pipeline-step" onclick="location.href='/send'">
+            <div class="pipeline-num">3</div><span class="pipeline-label">AI 写信</span>
+        </div>
+        <div class="pipeline-step" onclick="location.href='/send'">
+            <div class="pipeline-num">4</div><span class="pipeline-label">发送</span>
+        </div>
+    </div>
+</div>
+
+<!-- AI SEARCH -->
+<div class="card fade-in">
+    <div class="card-header">
+        <span class="card-title">AI 智能搜索</span>
+        <button class="btn btn-sm" onclick="document.getElementById('addModal').classList.add('show')">+ 手动添加</button>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">目标区域</label>
+            <select class="form-select" id="searchRegion">
+                <option value="middle_east">中东（沙特/阿联酋/科威特/卡塔尔）</option>
+                <option value="south_america">南美洲（巴西/阿根廷/智利/哥伦比亚）</option>
+                <option value="central_america">中美洲（墨西哥/巴拿马/哥斯达黎加）</option>
+                <option value="southeast_asia">东南亚（越南/印尼/泰国/菲律宾）</option>
+                <option value="south_asia">南亚（印度/巴基斯坦/孟加拉）</option>
+                <option value="east_asia">东亚（韩国/日本）</option>
+                <option value="central_asia">中亚（哈萨克斯坦/乌兹别克斯坦）</option>
+                <option value="africa_west">西非（尼日利亚/加纳/塞内加尔）</option>
+                <option value="africa_east">东非（肯尼亚/坦桑尼亚/埃塞俄比亚）</option>
+                <option value="africa_north">北非（埃及/阿尔及利亚/摩洛哥）</option>
+                <option value="africa_south">南部非洲（南非/安哥拉/赞比亚）</option>
+                <option value="europe_west">西欧（英国/德国/法国/意大利）</option>
+                <option value="europe_east">东欧（土耳其/波兰/罗马尼亚）</option>
+                <option value="europe_north">北欧（挪威/瑞典/芬兰/丹麦）</option>
+                <option value="russia_cis">俄罗斯/独联体</option>
+                <option value="north_america">北美（美国/加拿大）</option>
+                <option value="oceania">大洋洲（澳大利亚/新西兰）</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">目标行业</label>
+            <select class="form-select" id="searchIndustry">
+                <option value="oil_gas">石油天然气</option>
+                <option value="mining">矿业</option>
+                <option value="construction">建筑 / EPC承包商</option>
+                <option value="petrochemical">石化化工</option>
+                <option value="trader">钢管贸易商</option>
+                <option value="water">水务 / 水处理</option>
+                <option value="power">电力 / 能源</option>
+                <option value="shipbuilding">造船 / 海工</option>
+                <option value="automotive">汽车制造</option>
+                <option value="hvac">暖通空调</option>
+                <option value="agriculture">农业 / 灌溉</option>
+                <option value="infrastructure">基础设施 / 桥梁</option>
+                <option value="pipeline">管道工程</option>
+                <option value="steel_structure">钢结构</option>
+                <option value="fire_protection">消防</option>
+                <option value="furniture">家具 / 装饰管</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="form-label">自定义搜索词（可选）</label>
+        <input class="form-input" id="searchKeywords" type="text" placeholder="例如：Saudi Aramco steel pipe procurement 2025">
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <button class="btn btn-primary" id="btnFindLeads" onclick="startFindLeads()">🔍 开始搜索</button>
+        <button class="btn btn-gold" onclick="mineAllEmails()">⛏️ 批量挖邮箱</button>
+        <div id="findProgress" style="flex: 1; display: none;">
+            <div class="progress-bar"><div class="progress-fill" id="findProgressFill" style="width: 0%"></div></div>
+            <div class="progress-text" id="findProgressText"></div>
+        </div>
+    </div>
+</div>
+
+<!-- LEADS TABLE -->
+<div class="card fade-in">
+    <div class="card-header">
+        <span class="card-title">客户列表 <span class="mono" style="color: var(--accent)">({{ leads|length }})</span></span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <input class="form-input" id="filterInput" type="text" placeholder="搜索..."
+                   style="width: 160px; padding: 6px 12px; font-size: 12px;" oninput="filterTable()">
+            <a href="/api/leads/export-csv" class="btn btn-sm">📥 导出CSV</a>
+            <button class="btn btn-sm" onclick="document.getElementById('csvUpload').click()">📤 导入CSV</button>
+            <input type="file" id="csvUpload" accept=".csv" style="display:none" onchange="importCSV(this)">
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table id="leadsTable">
+            <thead><tr><th>#</th><th>公司</th><th>国家</th><th>联系人</th><th>邮箱</th><th>评级</th><th>需求</th><th>操作</th></tr></thead>
+            <tbody>
+                {% for lead in leads %}
+                <tr data-idx="{{ loop.index0 }}">
+                    <td class="mono">{{ loop.index }}</td>
+                    <td><a href="/leads/{{ loop.index0 }}" style="color: var(--text-primary); font-weight: 600; text-decoration: none; border-bottom: 1px dashed var(--border-light);">{{ lead.company }}</a></td>
+                    <td>{{ lead.country }}</td>
+                    <td>{{ lead.contact or '—' }}</td>
+                    <td class="mono" style="font-size: 12px;" id="email-{{ loop.index0 }}">
+                        {% if lead.email and '@' in lead.email %}<span style="color: var(--success);">{{ lead.email }}</span>
+                        {% else %}<span style="color: var(--text-muted);">未找到</span>{% endif %}
+                    </td>
+                    <td>{% if lead.grade == 'A' %}<span class="badge badge-a">A</span>{% elif lead.grade == 'B' %}<span class="badge badge-b">B</span>{% else %}<span class="badge badge-c">C</span>{% endif %}</td>
+                    <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; font-size: 12px;">{{ lead.need or '—' }}</td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            {% if not lead.email or '@' not in lead.email %}<button class="btn btn-sm btn-gold" onclick="mineEmail({{ loop.index0 }})" id="mine-btn-{{ loop.index0 }}">⛏️</button>{% endif %}
+                            <button class="btn btn-sm btn-primary" onclick="goWriteEmail({{ loop.index0 }})">✉️</button>
+                            <a href="/leads/{{ loop.index0 }}" class="btn btn-sm">📋</a>
+                            <button class="btn btn-sm btn-danger" onclick="deleteLead({{ loop.index0 }})">✗</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not leads %}<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">🔍</div><p>客户库为空</p></div></td></tr>{% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+<!-- ═══ BULK MODE ═══ -->
+<div id="mode-bulk" style="display: none;">
+<div class="card fade-in" style="margin-top: 20px;">
+    <div class="card-header">
+        <span class="card-title">群开模式 — 选国家 + 选行业，批量搜索</span>
+    </div>
+    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
+        勾选目标国家和行业，AI 会逐个搜索，为每个行业生成通用开发信。选得越多跑得越久。
+    </p>
+
+    <!-- COUNTRIES BY REGION -->
+    <div style="font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">选择国家</div>
+    <div id="countrySelector" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; max-height: 360px; overflow-y: auto; padding-right: 8px;">
+        <!-- Dynamically loaded -->
+    </div>
+    <div style="margin-bottom: 20px;">
+        <button class="btn btn-sm" onclick="selectAllCountries()">全选</button>
+        <button class="btn btn-sm" onclick="deselectAllCountries()">全不选</button>
+        <span class="mono" id="countryCount" style="margin-left: 12px; color: var(--text-muted);">已选 0 个国家</span>
+    </div>
+
+    <!-- INDUSTRIES -->
+    <div style="font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">选择行业</div>
+    <div id="industrySelector" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;">
+        <!-- Dynamically loaded -->
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px;">
+        <button class="btn btn-primary" id="btnBulk" onclick="startBulk()" style="padding: 12px 28px;">🚀 开始群开</button>
+        <div id="bulkProgress" style="flex: 1; display: none;">
+            <div class="progress-bar"><div class="progress-fill" id="bulkProgressFill" style="width: 0%"></div></div>
+            <div class="progress-text" id="bulkProgressText"></div>
+        </div>
+    </div>
+</div>
+
+<div id="bulkResults" style="display: none;">
+    <div class="card fade-in">
+        <div class="card-header">
+            <span class="card-title">群开结果</span>
+            <button class="btn btn-success btn-sm" onclick="importAllBulk()">📥 全部导入客户库</button>
+        </div>
+        <div id="bulkResultsContent"></div>
+    </div>
+</div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal">
+        <div class="modal-title">手动添加客户</div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">公司名称 *</label><input class="form-input" id="addCompany" placeholder="Saudi Aramco"></div>
+            <div class="form-group"><label class="form-label">国家</label><input class="form-input" id="addCountry" placeholder="Saudi Arabia"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label class="form-label">联系人</label><input class="form-input" id="addContact" placeholder="Mohammad"></div>
+            <div class="form-group"><label class="form-label">邮箱</label><input class="form-input" id="addEmail" type="email" placeholder="xxx@company.com"></div>
+        </div>
+        <div class="form-group"><label class="form-label">需求</label><input class="form-input" id="addNeed" placeholder="钢管采购需求"></div>
+        <div class="modal-actions">
+            <button class="btn" onclick="document.getElementById('addModal').classList.remove('show')">取消</button>
+            <button class="btn btn-primary" onclick="addLead()">添加</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const leadsData = {{ leads | tojson | safe }};
+
+// ═══ MODE SWITCH ═══
+function switchMode(mode) {
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i === (mode==='precise'?0:1)));
+    document.getElementById('mode-precise').style.display = mode==='precise' ? '' : 'none';
+    document.getElementById('mode-bulk').style.display = mode==='bulk' ? '' : 'none';
+}
+
+function filterTable() {
+    const q = document.getElementById('filterInput').value.toLowerCase();
+    document.querySelectorAll('#leadsTable tbody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+
+// ═══ AI SEARCH (精开) ═══
+async function startFindLeads() {
+    const btn = document.getElementById('btnFindLeads'); btn.disabled = true;
+    document.getElementById('findProgress').style.display = 'block';
+    const res = await apiCall('/api/find-leads', 'POST', {
+        region: document.getElementById('searchRegion').value,
+        industry: document.getElementById('searchIndustry').value,
+        keywords: document.getElementById('searchKeywords').value,
+    });
+    if (res.error) { showToast(res.error, 'error'); btn.disabled = false; return; }
+    showToast('搜索任务已启动...', 'info');
+    const poll = setInterval(async () => {
+        const s = await apiCall('/api/task-status/find_leads');
+        document.getElementById('findProgressFill').style.width = s.progress + '%';
+        document.getElementById('findProgressText').textContent = s.message;
+        if (!s.running) { clearInterval(poll); btn.disabled = false;
+            showToast(s.message, s.progress===100?'success':'error');
+            if (s.progress===100) refreshLeadsTable(); }
+    }, 2000);
+}
+
+// ═══ BULK OUTREACH (群开) ═══
+async function loadBulkConfig() {
+    const res = await apiCall('/api/bulk-config');
+    if (res.error) return;
+    // Render country checkboxes grouped by region
+    const sel = document.getElementById('countrySelector');
+    let html = '';
+    for (const [key, region] of Object.entries(res.countries)) {
+        html += `<div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);padding:10px;">`;
+        html += `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">${region.label}</div>`;
+        for (const c of region.countries) {
+            html += `<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);cursor:pointer;padding:2px 0;">`;
+            html += `<input type="checkbox" class="bulk-country" value="${c}"> ${c}</label>`;
+        }
+        html += `</div>`;
+    }
+    sel.innerHTML = html;
+    // Render industry checkboxes
+    const indSel = document.getElementById('industrySelector');
+    let indHtml = '';
+    for (const [key, ind] of Object.entries(res.industries)) {
+        indHtml += `<label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);cursor:pointer;padding:4px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);">`;
+        indHtml += `<input type="checkbox" class="bulk-ind" value="${key}"> ${ind.name}</label>`;
+    }
+    indSel.innerHTML = indHtml;
+    // Bind count update
+    document.querySelectorAll('.bulk-country').forEach(cb => cb.addEventListener('change', updateCountryCount));
+}
+function updateCountryCount() {
+    const n = document.querySelectorAll('.bulk-country:checked').length;
+    document.getElementById('countryCount').textContent = `已选 ${n} 个国家`;
+}
+function selectAllCountries() { document.querySelectorAll('.bulk-country').forEach(cb => cb.checked = true); updateCountryCount(); }
+function deselectAllCountries() { document.querySelectorAll('.bulk-country').forEach(cb => cb.checked = false); updateCountryCount(); }
+loadBulkConfig();
+
+async function startBulk() {
+    const countries = [...document.querySelectorAll('.bulk-country:checked')].map(c => c.value);
+    const inds = [...document.querySelectorAll('.bulk-ind:checked')].map(c => c.value);
+    if (!countries.length) { showToast('请至少选一个国家', 'error'); return; }
+    if (!inds.length) { showToast('请至少选一个行业', 'error'); return; }
+    if (countries.length * inds.length > 30) {
+        if (!confirm(`将搜索 ${countries.length} 个国家 × ${inds.length} 个行业 = ${countries.length * inds.length} 组合，可能需要较长时间，确定？`)) return;
+    }
+    document.getElementById('btnBulk').disabled = true;
+    document.getElementById('bulkProgress').style.display = 'block';
+
+    const res = await apiCall('/api/bulk-outreach', 'POST', { countries, industries: inds });
+    if (res.error) { showToast(res.error,'error'); document.getElementById('btnBulk').disabled=false; return; }
+    showToast('群开任务已启动...','info');
+
+    const poll = setInterval(async () => {
+        const s = await apiCall('/api/task-status/bulk');
+        document.getElementById('bulkProgressFill').style.width = s.progress + '%';
+        document.getElementById('bulkProgressText').textContent = s.message;
+        if (!s.running) {
+            clearInterval(poll); document.getElementById('btnBulk').disabled = false;
+            if (s.progress === 100) { showToast(s.message, 'success'); loadBulkResults(); }
+            else showToast(s.message, 'error');
+        }
+    }, 3000);
+}
+
+async function loadBulkResults() {
+    const res = await apiCall('/api/bulk-results');
+    if (res.error) return;
+    const div = document.getElementById('bulkResultsContent');
+    const indNames = {oil_gas:'石油天然气',mining:'矿业',construction:'建筑/EPC',petrochemical:'石化',trader:'贸易商'};
+    let html = '';
+    for (const [key, companies] of Object.entries(res.companies || {})) {
+        const email = (res.emails||{})[key] || '';
+        html += `<div style="margin-bottom:20px;padding:16px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);">`;
+        html += `<div style="font-weight:600;font-size:14px;margin-bottom:10px;color:var(--text-primary);">${indNames[key]||key} · ${companies.length}家公司</div>`;
+        html += `<table style="width:100%;font-size:12px;margin-bottom:12px;"><thead><tr><th>公司</th><th>国家</th><th>官网</th></tr></thead><tbody>`;
+        for (const c of companies) {
+            html += `<tr><td style="color:var(--text-primary)">${c.company}</td><td>${c.country}</td><td class="mono" style="font-size:11px">${c.website||'—'}</td></tr>`;
+        }
+        html += `</tbody></table>`;
+        html += `<details><summary style="cursor:pointer;font-size:12px;color:var(--accent);">查看通用开发信</summary>`;
+        html += `<pre style="font-size:11px;color:var(--text-secondary);white-space:pre-wrap;margin-top:8px;padding:12px;background:var(--bg-secondary);border-radius:var(--radius);">${email}</pre></details>`;
+        html += `</div>`;
+    }
+    div.innerHTML = html;
+    document.getElementById('bulkResults').style.display = '';
+    window._bulkData = res;
+}
+
+async function importAllBulk() {
+    if (!window._bulkData) { showToast('没有群开数据','error'); return; }
+    let all = [];
+    for (const companies of Object.values(window._bulkData.companies || {})) all.push(...companies);
+    if (!all.length) { showToast('没有公司数据','error'); return; }
+    const res = await apiCall('/api/bulk-import','POST',{companies:all});
+    if (res.success) { showToast(`已导入 ${res.added} 家公司到客户库`,'success'); setTimeout(()=>location.reload(),1500); }
+}
+
+// ═══ EMAIL MINING ═══
+async function mineEmail(idx) {
+    const lead = leadsData[idx];
+    const btn = document.getElementById('mine-btn-'+idx);
+    if(btn){btn.disabled=true;btn.textContent='⏳';}
+    showToast(`挖掘 ${lead.company} 邮箱...`,'info');
+    const res = await apiCall('/api/mine-email','POST',{idx,company:lead.company,country:lead.country||'',title:lead.title||''});
+    if(res.email){
+        document.getElementById('email-'+idx).innerHTML=`<span style="color:var(--success)">${res.email}</span> <span class="mono" style="color:var(--text-muted);font-size:10px">(${res.confidence}%)</span>`;
+        if(btn)btn.remove(); showToast(`${lead.company}: ${res.email}`,'success'); leadsData[idx].email=res.email;
+    } else { if(btn){btn.disabled=false;btn.textContent='⛏️';} showToast(`${lead.company} 未找到`,'error'); }
+}
+
+async function mineAllEmails() {
+    const no = leadsData.filter(l=>!l.email||!l.email.includes('@'));
+    if(!no.length){showToast('所有客户都有邮箱了','success');return;}
+    if(!confirm(`为 ${no.length} 家客户挖掘邮箱？`))return;
+    for(let i=0;i<leadsData.length;i++){
+        if(leadsData[i].email&&leadsData[i].email.includes('@'))continue;
+        await mineEmail(i); await new Promise(r=>setTimeout(r,1000));
+    }
+    showToast('批量挖掘完成！','success');
+}
+
+// ═══ CSV IMPORT ═══
+async function importCSV(input) {
+    const file = input.files[0]; if(!file)return;
+    const fd = new FormData(); fd.append('file', file);
+    const res = await fetch('/api/leads/import-csv',{method:'POST',body:fd});
+    const data = await res.json();
+    if(data.success){showToast(`导入成功！新增 ${data.added} 家`,'success');setTimeout(()=>location.reload(),1500);}
+    else showToast('导入失败：'+(data.error||''),'error');
+    input.value='';
+}
+
+// ═══ OTHER ═══
+async function deleteLead(idx) {
+    if(!confirm('确定删除？'))return;
+    const res=await apiCall(`/api/leads/${idx}`,'DELETE');
+    if(res.removed!==undefined){showToast(`已删除 ${res.removed}`,'info');setTimeout(()=>location.reload(),800);}
+}
+
+async function addLead() {
+    const data={company:document.getElementById('addCompany').value,country:document.getElementById('addCountry').value,
+        contact:document.getElementById('addContact').value,email:document.getElementById('addEmail').value,
+        need:document.getElementById('addNeed').value,grade:'B'};
+    if(!data.company){showToast('公司名不能为空','error');return;}
+    const res=await apiCall('/api/leads/add','POST',data);
+    if(res.success){showToast('添加成功','success');document.getElementById('addModal').classList.remove('show');setTimeout(()=>location.reload(),800);}
+}
+
+function goWriteEmail(idx) {
+    const lead=leadsData[idx];
+    if(!lead.email||!lead.email.includes('@')){showToast('请先挖邮箱','error');return;}
+    sessionStorage.setItem('writeEmailFor',JSON.stringify(lead)); window.location.href='/send';
+}
+
+// ═══ 动态刷新客户表格（无需整页刷新）═══
+async function refreshLeadsTable() {
+    const res = await apiCall('/api/leads/list');
+    if (!res.leads) return;
+    // 更新内存数据
+    leadsData.length = 0;
+    res.leads.forEach(l => leadsData.push(l));
+    // 更新计数
+    const countEl = document.querySelector('.card-title .mono');
+    if (countEl) countEl.textContent = `(${leadsData.length})`;
+    // 重绘表格
+    const tbody = document.querySelector('#leadsTable tbody');
+    if (!tbody) return;
+    if (!leadsData.length) {
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">🔍</div><p>客户库为空</p></div></td></tr>';
+        return;
+    }
+    let html = '';
+    leadsData.forEach((lead, i) => {
+        const hasEmail = lead.email && lead.email.includes('@');
+        const gradeClass = lead.grade === 'A' ? 'badge-a' : lead.grade === 'B' ? 'badge-b' : 'badge-c';
+        html += `<tr data-idx="${i}">
+            <td class="mono">${i+1}</td>
+            <td><a href="/leads/${i}" style="color:var(--text-primary);font-weight:600;text-decoration:none;border-bottom:1px dashed var(--border-light);">${lead.company||''}</a></td>
+            <td>${lead.country||''}</td>
+            <td>${lead.contact||'—'}</td>
+            <td class="mono" style="font-size:12px;" id="email-${i}">
+                ${hasEmail ? `<span style="color:var(--success);">${lead.email}</span>` : `<span style="color:var(--text-muted);">未找到</span>`}
+            </td>
+            <td><span class="badge ${gradeClass}">${lead.grade||'C'}</span></td>
+            <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:12px;">${lead.need||'—'}</td>
+            <td>
+                <div style="display:flex;gap:4px;">
+                    ${!hasEmail ? `<button class="btn btn-sm btn-gold" onclick="mineEmail(${i})" id="mine-btn-${i}">⛏️</button>` : ''}
+                    <button class="btn btn-sm btn-primary" onclick="goWriteEmail(${i})">✉️</button>
+                    <a href="/leads/${i}" class="btn btn-sm">📋</a>
+                    <button class="btn btn-sm btn-danger" onclick="deleteLead(${i})">✗</button>
+                </div>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+</script>
+{% endblock %}

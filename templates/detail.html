@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% set active_page = "leads" %}
+{% block title %}{{ lead.company }}{% endblock %}
+{% block page_title %}客户详情{% endblock %}
+{% block breadcrumb %}GMT.AI / Leads / {{ lead.company }}{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+    <!-- LEFT: Info -->
+    <div>
+        <div class="card fade-in">
+            <div class="card-header">
+                <span class="card-title">基本信息</span>
+                <div style="display: flex; gap: 8px;">
+                    {% if lead.grade == 'A' %}<span class="badge badge-a">A级</span>
+                    {% elif lead.grade == 'B' %}<span class="badge badge-b">B级</span>
+                    {% else %}<span class="badge badge-c">{{ lead.grade or 'C' }}级</span>{% endif %}
+                    {% if lead.status == 'sent' %}<span class="badge badge-success">已发送</span>
+                    {% elif lead.status == 'replied' %}<span class="badge badge-warning">已回复</span>
+                    {% else %}<span class="badge badge-info">{{ lead.status or '新线索' }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">公司名称</label>
+                    <input class="form-input" id="dCompany" value="{{ lead.company }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">国家</label>
+                    <input class="form-input" id="dCountry" value="{{ lead.country }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">联系人</label>
+                    <input class="form-input" id="dContact" value="{{ lead.contact }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">职位</label>
+                    <input class="form-input" id="dTitle" value="{{ lead.title }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">邮箱</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input class="form-input" id="dEmail" value="{{ lead.email }}" style="flex: 1;">
+                        {% if not lead.email or '@' not in lead.email %}
+                        <button class="btn btn-gold btn-sm" onclick="mineThisEmail()">⛏️ 挖</button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">评级</label>
+                    <select class="form-select" id="dGrade">
+                        <option value="A" {% if lead.grade == 'A' %}selected{% endif %}>A级</option>
+                        <option value="B" {% if lead.grade == 'B' %}selected{% endif %}>B级</option>
+                        <option value="C" {% if lead.grade == 'C' or not lead.grade %}selected{% endif %}>C级</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">需求描述</label>
+                <input class="form-input" id="dNeed" value="{{ lead.need }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注</label>
+                <textarea class="form-textarea" id="dNote" rows="3" placeholder="添加备注...">{{ lead.note or '' }}</textarea>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+                <button class="btn btn-primary" onclick="saveLead()">保存修改</button>
+                <button class="btn btn-success" onclick="goWrite()">✉️ 写开发信</button>
+                <a href="/leads" class="btn">← 返回列表</a>
+            </div>
+        </div>
+
+        {% if lead.website %}
+        <div class="card fade-in">
+            <div class="card-header"><span class="card-title">官网</span></div>
+            <a href="{{ lead.website }}" target="_blank" style="color: var(--accent); font-size: 13px; word-break: break-all;">{{ lead.website }}</a>
+        </div>
+        {% endif %}
+
+        {% if lead.email_all %}
+        <div class="card fade-in">
+            <div class="card-header"><span class="card-title">挖掘到的所有邮箱</span></div>
+            {% for e in lead.email_all %}
+            <div style="padding: 4px 0; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);">
+                {{ e }}
+                {% if e == lead.email %}<span class="badge badge-success" style="font-size: 10px; margin-left: 8px;">当前使用</span>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- RIGHT: History -->
+    <div>
+        <div class="card fade-in" style="position: sticky; top: 80px;">
+            <div class="card-header">
+                <span class="card-title">邮件历史 <span class="mono" style="color: var(--accent);">({{ history|length }})</span></span>
+            </div>
+            {% if history %}
+            <div style="max-height: 500px; overflow-y: auto;">
+                {% for h in history %}
+                <div style="padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; background: var(--bg-primary);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span class="mono" style="font-size: 11px; color: var(--text-muted);">{{ h.date }} {{ h.time }}</span>
+                        {% if h.status == 'success' %}
+                        <span class="badge badge-success">发送成功</span>
+                        {% else %}
+                        <span class="badge badge-danger">发送失败</span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">{{ h.subject or '(无主题)' }}</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">→ {{ h.email }}</div>
+                    {% if h.error %}<div style="font-size: 11px; color: var(--danger); margin-top: 4px;">{{ h.error }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding: 32px;">
+                <div class="empty-state-icon">📭</div>
+                <p>还没有发送记录</p>
+                <button class="btn btn-primary btn-sm" style="margin-top: 12px;" onclick="goWrite()">写第一封开发信</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveLead() {
+    const data = {
+        company: document.getElementById('dCompany').value,
+        country: document.getElementById('dCountry').value,
+        contact: document.getElementById('dContact').value,
+        title:   document.getElementById('dTitle').value,
+        email:   document.getElementById('dEmail').value,
+        grade:   document.getElementById('dGrade').value,
+        need:    document.getElementById('dNeed').value,
+        note:    document.getElementById('dNote').value,
+    };
+    const res = await apiCall('/api/leads/{{ idx }}/update', 'POST', data);
+    if (res.success) showToast('已保存', 'success');
+    else showToast('保存失败', 'error');
+}
+
+async function mineThisEmail() {
+    showToast('正在挖掘邮箱...', 'info');
+    const res = await apiCall('/api/mine-email', 'POST', {
+        idx: {{ idx }},
+        company: document.getElementById('dCompany').value,
+        country: document.getElementById('dCountry').value,
+        title: document.getElementById('dTitle').value,
+    });
+    if (res.email) {
+        document.getElementById('dEmail').value = res.email;
+        showToast('找到邮箱: ' + res.email, 'success');
+    } else {
+        showToast('未找到邮箱', 'error');
+    }
+}
+
+function goWrite() {
+    const lead = {
+        company: document.getElementById('dCompany').value,
+        country: document.getElementById('dCountry').value,
+        contact: document.getElementById('dContact').value,
+        email:   document.getElementById('dEmail').value,
+        need:    document.getElementById('dNeed').value,
+    };
+    sessionStorage.setItem('writeEmailFor', JSON.stringify(lead));
+    window.location.href = '/send';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% set active_page = "send" %}
+{% block title %}发邮件{% endblock %}
+{% block page_title %}发邮件{% endblock %}
+{% block breadcrumb %}GMT.AI / Send{% endblock %}
+
+{% block content %}
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('compose')">写开发信</div>
+    <div class="tab" onclick="switchTab('batch')">批量发送</div>
+    <div class="tab" onclick="switchTab('test')">测试发送</div>
+</div>
+
+<!-- TAB: COMPOSE -->
+<div class="tab-panel" id="tab-compose">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <!-- LEFT: Customer Info -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">客户信息</span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">公司名</label>
+                    <input class="form-input" id="composeCompany" placeholder="Saudi Aramco">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">国家</label>
+                    <input class="form-input" id="composeCountry" placeholder="Saudi Arabia">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">联系人</label>
+                    <input class="form-input" id="composeContact" placeholder="Procurement Manager">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">收件邮箱</label>
+                    <input class="form-input" id="composeEmail" type="email" placeholder="xxx@company.com">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">需求背景</label>
+                <input class="form-input" id="composeNeed" placeholder="石油管道项目，需要API 5L管线管">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">语言</label>
+                    <select class="form-select" id="composeLang">
+                        <option value="en">英语</option>
+                        <option value="es">西班牙语</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button class="btn btn-primary" id="btnGenerate" onclick="generateEmail()" style="width: 100%;">
+                        🤖 AI 生成开发信
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Email Preview -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">邮件内容</span>
+                <button class="btn btn-sm btn-success" id="btnSendOne" onclick="sendOneEmail()" disabled>
+                    📤 发送
+                </button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">主题 (Subject)</label>
+                <input class="form-input" id="composeSubject" placeholder="AI 生成后自动填写">
+            </div>
+            <div class="form-group">
+                <label class="form-label">正文 (Body)</label>
+                <textarea class="form-textarea" id="composeBody" rows="14"
+                          placeholder="点击「AI 生成开发信」，或手动编写..."></textarea>
+            </div>
+            <div id="generateSpinner" style="display: none; text-align: center; padding: 12px;">
+                <div class="progress-bar"><div class="progress-fill" style="width: 60%; animation: pulse 1.5s infinite;"></div></div>
+                <div class="progress-text">AI 正在撰写开发信...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: BATCH -->
+<div class="tab-panel" id="tab-batch" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📤 批量发送</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="mono" style="color: var(--text-muted);">
+                    共 {{ leads|length }} 个有邮箱的客户
+                </span>
+            </div>
+        </div>
+
+        {% if leads %}
+        <div class="table-wrap" style="max-height: 400px; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="checkAll" onchange="toggleAll()"></th>
+                        <th>公司</th>
+                        <th>联系人</th>
+                        <th>邮箱</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                    <tr>
+                        <td><input type="checkbox" class="lead-check" data-idx="{{ lead._db_idx }}"
+                                   {% if lead._sent %}disabled{% endif %}></td>
+                        <td style="font-weight: 600;">{{ lead.company }}</td>
+                        <td>{{ lead.contact or '—' }}</td>
+                        <td class="mono" style="font-size: 12px;">{{ lead.email }}</td>
+                        <td>
+                            {% if lead._sent %}
+                                <span class="badge badge-success">已发送</span>
+                            {% else %}
+                                <span class="badge" style="background: var(--accent-glow); color: var(--accent);">待发送</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <select class="form-select" id="batchLang" style="width: 120px; padding: 8px 12px;">
+                <option value="en">英语</option>
+                <option value="es">西班牙语</option>
+            </select>
+            <button class="btn btn-primary" id="btnBatchSend" onclick="batchGenerateAndSend()">
+                🚀 AI生成 + 逐封发送
+            </button>
+            <span class="mono" id="batchCount" style="color: var(--text-muted);">已选 0 家</span>
+            <div id="batchProgress" style="flex: 1; min-width: 200px; display: none;">
+                <div class="progress-bar"><div class="progress-fill" id="batchProgressFill" style="width: 0%"></div></div>
+                <div class="progress-text" id="batchProgressText"></div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>没有有邮箱的客户，请先去「找客户」页面添加</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- TAB: TEST -->
+<div class="tab-panel" id="tab-test" style="display: none;">
+    <div class="card" style="max-width: 500px;">
+        <div class="card-header">
+            <span class="card-title">🧪 发送测试邮件</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px;">
+            验证阿里云邮件推送是否正常工作。测试邮件发送到你自己的邮箱。
+        </p>
+        <div class="form-group">
+            <label class="form-label">你的收件邮箱</label>
+            <input class="form-input" id="testEmail" type="email" placeholder="your@email.com">
+        </div>
+        <button class="btn btn-primary" onclick="sendTest()">发送测试邮件</button>
+        <div id="testResult" style="margin-top: 16px;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const batchLeads = {{ leads | tojson | safe }};
+
+// Tab switching
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', t.textContent.includes(
+            name === 'compose' ? '写' : name === 'batch' ? '批量' : '测试'
+        ));
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+    document.getElementById('tab-' + name).style.display = '';
+}
+
+// Load from sessionStorage if redirected from leads page
+const writeFor = sessionStorage.getItem('writeEmailFor');
+if (writeFor) {
+    const lead = JSON.parse(writeFor);
+    document.getElementById('composeCompany').value = lead.company || '';
+    document.getElementById('composeCountry').value = lead.country || '';
+    document.getElementById('composeContact').value = lead.contact || '';
+    document.getElementById('composeEmail').value   = lead.email || '';
+    document.getElementById('composeNeed').value    = lead.need || '';
+    sessionStorage.removeItem('writeEmailFor');
+}
+
+// Generate email with AI
+async function generateEmail() {
+    const btn = document.getElementById('btnGenerate');
+    const spinner = document.getElementById('generateSpinner');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+
+    try {
+        const res = await apiCall('/api/generate-email', 'POST', {
+            company: document.getElementById('composeCompany').value,
+            contact: document.getElementById('composeContact').value,
+            country: document.getElementById('composeCountry').value,
+            need:    document.getElementById('composeNeed').value,
+            lang:    document.getElementById('composeLang').value,
+        });
+
+        if (res.error) {
+            showToast('生成失败：' + res.error, 'error');
+        } else {
+            document.getElementById('composeSubject').value = res.subject;
+            document.getElementById('composeBody').value = res.body;
+            document.getElementById('btnSendOne').disabled = false;
+            showToast('开发信生成成功！', 'success');
+        }
+    } catch (e) {
+        showToast('请求失败：' + e.message, 'error');
+    }
+
+    btn.disabled = false;
+    spinner.style.display = 'none';
+}
+
+// Send single email
+async function sendOneEmail() {
+    const email = document.getElementById('composeEmail').value;
+    if (!email || !email.includes('@')) {
+        showToast('请填写有效的收件邮箱', 'error');
+        return;
+    }
+
+    document.getElementById('btnSendOne').disabled = true;
+    showToast('正在发送...', 'info');
+
+    const res = await apiCall('/api/send-batch', 'POST', {
+        targets: [{
+            email:   email,
+            company: document.getElementById('composeCompany').value,
+            contact: document.getElementById('composeContact').value,
+            subject: document.getElementById('composeSubject').value,
+            body:    document.getElementById('composeBody').value,
+        }]
+    });
+
+    if (res.status === 'started') {
+        // Poll
+        const poll = setInterval(async () => {
+            const status = await apiCall('/api/task-status/send_email');
+            if (!status.running) {
+                clearInterval(poll);
+                document.getElementById('btnSendOne').disabled = false;
+                showToast(status.message, status.progress === 100 ? 'success' : 'error');
+            }
+        }, 1500);
+    } else {
+        showToast(res.error || '发送失败', 'error');
+        document.getElementById('btnSendOne').disabled = false;
+    }
+}
+
+// Batch send
+function toggleAll() {
+    const checked = document.getElementById('checkAll').checked;
+    document.querySelectorAll('.lead-check:not(:disabled)').forEach(cb => cb.checked = checked);
+    updateBatchCount();
+}
+
+document.querySelectorAll('.lead-check').forEach(cb => {
+    cb.addEventListener('change', updateBatchCount);
+});
+
+function updateBatchCount() {
+    const count = document.querySelectorAll('.lead-check:checked').length;
+    document.getElementById('batchCount').textContent = `已选 ${count} 家`;
+}
+
+async function batchGenerateAndSend() {
+    const checked = document.querySelectorAll('.lead-check:checked');
+    if (!checked.length) { showToast('请先勾选要发送的客户', 'error'); return; }
+    const lang = document.getElementById('batchLang').value;
+    const langName = lang === 'es' ? '西班牙语' : '英语';
+    if (!confirm(`确定要向 ${checked.length} 家客户发送开发信？\nAI 会为每家客户单独生成${langName}开发信再发送。\n预计用时 ${checked.length * 20}~${checked.length * 40} 秒。`)) return;
+
+    // 收集客户在leads数组中的原始索引
+    const indices = [];
+    checked.forEach(cb => {
+        const idx = parseInt(cb.dataset.idx);
+        indices.push(idx);
+    });
+
+    document.getElementById('btnBatchSend').disabled = true;
+    document.getElementById('batchProgress').style.display = 'block';
+
+    const res = await apiCall('/api/batch-generate-send', 'POST', { indices, lang });
+
+    if (res.status === 'started') {
+        showToast(`批量任务启动：${res.count} 家客户`, 'info');
+        const poll = setInterval(async () => {
+            const status = await apiCall('/api/task-status/batch_gen_send');
+            document.getElementById('batchProgressFill').style.width = status.progress + '%';
+            document.getElementById('batchProgressText').textContent = status.message;
+
+            if (!status.running) {
+                clearInterval(poll);
+                document.getElementById('btnBatchSend').disabled = false;
+                showToast(status.message, status.progress === 100 ? 'success' : 'error');
+                setTimeout(() => location.reload(), 2000);
+            }
+        }, 3000);
+    } else {
+        showToast(res.error || '启动失败', 'error');
+        document.getElementById('btnBatchSend').disabled = false;
+    }
+}
+
+// Test send
+async function sendTest() {
+    const email = document.getElementById('testEmail').value;
+    if (!email) { showToast('请输入邮箱', 'error'); return; }
+
+    document.getElementById('testResult').innerHTML =
+        '<span class="mono" style="color: var(--accent);">发送中...</span>';
+
+    const res = await apiCall('/api/send-test', 'POST', { to: email });
+    if (res.success) {
+        document.getElementById('testResult').innerHTML =
+            '<span class="badge badge-success" style="font-size: 13px; padding: 8px 16px;">✅ 发送成功！请查收邮箱</span>';
+    } else {
+        document.getElementById('testResult').innerHTML =
+            `<span class="badge badge-danger" style="font-size: 13px; padding: 8px 16px;">❌ ${res.error || '失败'}</span>`;
+    }
+}
+</script>
+{% endblock %}
